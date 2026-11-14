@@ -66,3 +66,29 @@ export type ListEntry = {
   assigned_to: string | null;
   done: boolean;
 };
+
+export type RepeatUnit = 'day' | 'week' | 'month' | 'year';
+
+export type Task = {
+  id: string;
+  household_id: string;
+  title: string;
+  item_id: string | null;
+  space_id: string | null;
+  repeat_every: number | null;
+  repeat_unit: RepeatUnit | null;
+  due_on: string;
+  assigned_to: string | null;
+  /** Time of day for the reminder, "HH:MM:SS", or null for none. */
+  remind_at: string | null;
+  active: boolean;
+  notes: string | null;
+};
+
+export type TaskCompletion = {
+  id: string;
+  task_id: string;
+  user_id: string | null;
+  done_at: string;
+  notes: string | null;
+};

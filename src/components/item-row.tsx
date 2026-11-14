@@ -31,7 +31,15 @@ function expiryNote(expiresOn: string | null) {
  * One inventory item with quick buttons. The quantity changes on screen right
  * away and is saved in the background.
  */
-export function ItemRow({ item, spaceName }: { item: Item; spaceName?: string }) {
+export function ItemRow({
+  item,
+  spaceName,
+  canEdit = true,
+}: {
+  item: Item;
+  spaceName?: string;
+  canEdit?: boolean;
+}) {
   const theme = useTheme();
   const [quantity, setLocalQuantity] = useState(item.quantity);
   const [error, setError] = useState(false);
@@ -63,9 +71,10 @@ export function ItemRow({ item, spaceName }: { item: Item; spaceName?: string })
     <ThemedView type="backgroundElement" style={styles.row}>
       <Pressable
         style={({ pressed }) => [styles.text, pressed && styles.pressed]}
+        disabled={!canEdit}
         onPress={() => router.push({ pathname: '/item/[id]', params: { id: item.id } })}
-        accessibilityRole="button"
-        accessibilityLabel={`${item.name}, ${details}. Edit`}>
+        accessibilityRole={canEdit ? 'button' : 'text'}
+        accessibilityLabel={`${item.name}, ${details}${canEdit ? '. Edit' : ''}`}>
         <ThemedText type="smallBold">{item.name}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           {details}
@@ -78,7 +87,9 @@ export function ItemRow({ item, spaceName }: { item: Item; spaceName?: string })
               </ThemedText>
             ) : null}
             {expiry ? (
-              <ThemedText type="small" style={{ color: expiry.urgent ? theme.danger : theme.textSecondary }}>
+              <ThemedText
+                type="small"
+                style={{ color: expiry.urgent ? theme.danger : theme.textSecondary }}>
                 {expiry.text}
               </ThemedText>
             ) : null}
@@ -90,11 +101,33 @@ export function ItemRow({ item, spaceName }: { item: Item; spaceName?: string })
           </View>
         ) : null}
       </Pressable>
-      <View style={styles.buttons}>
-        <Button small kind="secondary" label="−" accessibilityLabel={`Use one ${item.name}`} onPress={() => change(quantity - 1)} disabled={quantity <= 0} />
-        <Button small kind="secondary" label="+" accessibilityLabel={`Add one ${item.name}`} onPress={() => change(quantity + 1)} />
-        <Button small kind="secondary" label="Out" accessibilityLabel={`Mark ${item.name} as out`} onPress={() => change(0)} disabled={quantity <= 0} />
-      </View>
+      {canEdit ? (
+        <View style={styles.buttons}>
+          <Button
+            small
+            kind="secondary"
+            label="−"
+            accessibilityLabel={`Use one ${item.name}`}
+            onPress={() => change(quantity - 1)}
+            disabled={quantity <= 0}
+          />
+          <Button
+            small
+            kind="secondary"
+            label="+"
+            accessibilityLabel={`Add one ${item.name}`}
+            onPress={() => change(quantity + 1)}
+          />
+          <Button
+            small
+            kind="secondary"
+            label="Out"
+            accessibilityLabel={`Mark ${item.name} as out`}
+            onPress={() => change(0)}
+            disabled={quantity <= 0}
+          />
+        </View>
+      ) : null}
     </ThemedView>
   );
 }

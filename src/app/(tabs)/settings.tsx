@@ -1,11 +1,20 @@
 import { useCallback, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { Button, ButtonRow, Card, ErrorText, Screen, SectionLabel, TextField } from '@/components/screen';
+import {
+  Button,
+  ChoiceChips,
+  ButtonRow,
+  Card,
+  ErrorText,
+  Screen,
+  SectionLabel,
+  TextField,
+} from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useHousehold, useRequiredHousehold } from '@/lib/household';
-import { fetchMembers, updateDisplayName } from '@/lib/inventory';
+import { fetchMembers, updateDisplayName, updateRole } from '@/lib/inventory';
 import type { Member, MemberRole } from '@/lib/types';
 import { useLiveQuery } from '@/lib/use-live-query';
 
@@ -40,31 +49,75 @@ export default function HouseholdScreen() {
     <Screen title="Household" subtitle={household.name}>
       <SectionLabel>Invite someone</SectionLabel>
       <Card body="Share this code with a partner, roommate or family member. They pick “Join with a code” after creating their account.">
-        <ThemedText type="subtitle" selectable style={styles.code} accessibilityLabel={`Invite code ${household.invite_code.split('').join(' ')}`}>
+        <ThemedText
+          type="subtitle"
+          selectable
+          style={styles.code}
+          accessibilityLabel={`Invite code ${household.invite_code.split('').join(' ')}`}>
           {household.invite_code}
         </ThemedText>
       </Card>
 
       <SectionLabel>Members</SectionLabel>
-      {members.map((m) => (
-        <Card
-          key={m.id}
-          title={`${m.display_name || 'No name yet'}${m.id === member.id ? ' (you)' : ''}`}
-          body={RoleLabels[m.role]}
-        />
-      ))}
+      {members.map((m) => {
+        // The owner can make other members an Adult or a Kid. Kids can tick
+        // lists and do chores, but can't change spaces, items, lists or tasks.
+        const canChange = member.role === 'owner' && m.id !== member.id && m.role !== 'owner';
+        return (
+          <Card
+            key={m.id}
+            title={`${m.display_name || 'No name yet'}${m.id === member.id ? ' (you)' : ''}`}
+            body={canChange ? undefined : RoleLabels[m.role]}>
+            {canChange ? (
+              <ChoiceChips
+                options={[
+                  { value: 'adult', label: 'Adult' },
+                  { value: 'kid', label: 'Kid' },
+                ]}
+                value={m.role}
+                onChange={async (role) => {
+                  setError(null);
+                  try {
+                    await updateRole(m.id, role);
+                    await reload();
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : String(e));
+                  }
+                }}
+              />
+            ) : null}
+          </Card>
+        );
+      })}
+      {member.role === 'owner' && members.length > 1 ? (
+        <ThemedText type="small" themeColor="textSecondary">
+          Kids can tick off lists and do their chores, but can't change spaces, items, lists or tasks.
+        </ThemedText>
+      ) : null}
+      {name === null ? <ErrorText>{error}</ErrorText> : null}
 
       <SectionLabel>You</SectionLabel>
       {name === null ? (
         <Card title={member.display_name || 'No name yet'} body={session?.user.email ?? undefined}>
           <ButtonRow>
-            <Button small kind="secondary" label="Change your name" onPress={() => setName(member.display_name ?? '')} />
+            <Button
+              small
+              kind="secondary"
+              label="Change your name"
+              onPress={() => setName(member.display_name ?? '')}
+            />
             <Button small kind="secondary" label="Sign out" onPress={signOut} />
           </ButtonRow>
         </Card>
       ) : (
         <Card>
-          <TextField label="Your name" value={name} onChangeText={setName} autoFocus onSubmitEditing={saveName} />
+          <TextField
+            label="Your name"
+            value={name}
+            onChangeText={setName}
+            autoFocus
+            onSubmitEditing={saveName}
+          />
           <ErrorText>{error}</ErrorText>
           <ButtonRow>
             <Button small label="Save" onPress={saveName} />

@@ -2,10 +2,26 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import { ConfirmButton } from '@/components/confirm-button';
-import { Button, ButtonRow, ChoiceChips, ErrorText, Loading, Screen, SectionLabel, TextField } from '@/components/screen';
+import {
+  Button,
+  ButtonRow,
+  ChoiceChips,
+  ErrorText,
+  Loading,
+  Screen,
+  SectionLabel,
+  TextField,
+} from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { useRequiredHousehold } from '@/lib/household';
-import { createItem, deleteItem, fetchItem, fetchSpaces, updateItem, type ItemInput } from '@/lib/inventory';
+import {
+  createItem,
+  deleteItem,
+  fetchItem,
+  fetchSpaces,
+  updateItem,
+  type ItemInput,
+} from '@/lib/inventory';
 import type { Space } from '@/lib/types';
 
 type Params = {
@@ -79,7 +95,7 @@ export default function ItemScreen() {
                 category: params.category ?? '',
                 notes: '',
                 barcode: params.barcode ?? '',
-              }
+              },
         );
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -88,7 +104,16 @@ export default function ItemScreen() {
     return () => {
       cancelled = true;
     };
-  }, [household.id, isNew, params.id, params.spaceId, params.name, params.unit, params.category, params.barcode]);
+  }, [
+    household.id,
+    isNew,
+    params.id,
+    params.spaceId,
+    params.name,
+    params.unit,
+    params.category,
+    params.barcode,
+  ]);
 
   if (!form) {
     return error ? (
@@ -109,7 +134,8 @@ export default function ItemScreen() {
     const minQuantity = parseNumber(form.minQuantity);
     if (!form.name.trim()) return setError('Give the item a name.');
     if (!form.spaceId) return setError('Pick a space for the item.');
-    if (quantity == null || quantity < 0) return setError('Quantity needs to be a number, 0 or more.');
+    if (quantity == null || quantity < 0)
+      return setError('Quantity needs to be a number, 0 or more.');
     if (form.minQuantity.trim() && (minQuantity == null || minQuantity < 0))
       return setError('Minimum needs to be a number, 0 or more, or left blank.');
     if (form.expiresOn.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(form.expiresOn.trim()))
@@ -140,15 +166,31 @@ export default function ItemScreen() {
   return (
     <Screen pushed>
       <Stack.Screen options={{ title: isNew ? 'Add item' : form.name || 'Item' }} />
-      <TextField label="Name" value={form.name} onChangeText={(name) => set({ name })} placeholder="Basmati rice" autoFocus={isNew && !form.name} />
+      <TextField
+        label="Name"
+        value={form.name}
+        onChangeText={(name) => set({ name })}
+        placeholder="Basmati rice"
+        autoFocus={isNew && !form.name}
+      />
       <ChoiceChips
         label="Space"
         options={spaces.map((s) => ({ value: s.id, label: s.name }))}
         value={form.spaceId}
         onChange={(spaceId) => set({ spaceId })}
       />
-      <TextField label="How many" value={form.quantity} onChangeText={(quantity) => set({ quantity })} keyboardType="decimal-pad" />
-      <TextField label="Unit (optional)" value={form.unit} onChangeText={(unit) => set({ unit })} placeholder="bags, lbs, cans…" />
+      <TextField
+        label="How many"
+        value={form.quantity}
+        onChangeText={(quantity) => set({ quantity })}
+        keyboardType="decimal-pad"
+      />
+      <TextField
+        label="Unit (optional)"
+        value={form.unit}
+        onChangeText={(unit) => set({ unit })}
+        placeholder="bags, lbs, cans…"
+      />
       <TextField
         label="Add to groceries when it drops to (optional)"
         value={form.minQuantity}
@@ -165,8 +207,19 @@ export default function ItemScreen() {
         placeholder="YYYY-MM-DD"
         autoCorrect={false}
       />
-      <TextField label="Category (optional)" value={form.category} onChangeText={(category) => set({ category })} placeholder="Grains, cleaning, bike parts…" />
-      <TextField label="Notes (optional)" value={form.notes} onChangeText={(notes) => set({ notes })} multiline placeholder="Where it is, filter size, plant care…" />
+      <TextField
+        label="Category (optional)"
+        value={form.category}
+        onChangeText={(category) => set({ category })}
+        placeholder="Grains, cleaning, bike parts…"
+      />
+      <TextField
+        label="Notes (optional)"
+        value={form.notes}
+        onChangeText={(notes) => set({ notes })}
+        multiline
+        placeholder="Where it is, filter size, plant care…"
+      />
       {form.barcode ? (
         <ThemedText type="small" themeColor="textSecondary">
           Barcode {form.barcode}

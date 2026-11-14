@@ -22,9 +22,20 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon sf="checklist" md="checklist" />
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="tasks">
+        <NativeTabs.Trigger.Label>Tasks</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'calendar', selected: 'calendar' }}
+          md="event_repeat"
+        />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="settings">
         <NativeTabs.Trigger.Label>Household</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} md="group" />
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'person.2', selected: 'person.2.fill' }}
+          md="group"
+        />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

@@ -51,7 +51,9 @@ export default function SignInScreen() {
   return (
     <Screen
       title="HomeTrack"
-      subtitle={mode === 'sign-in' ? 'Sign in to your household.' : 'Create an account to get started.'}>
+      subtitle={
+        mode === 'sign-in' ? 'Sign in to your household.' : 'Create an account to get started.'
+      }>
       <TextField
         label="Email"
         value={email}
@@ -74,7 +76,11 @@ export default function SignInScreen() {
       <ErrorText>{error}</ErrorText>
       {notice ? <ThemedText type="small">{notice}</ThemedText> : null}
       <ButtonRow>
-        <Button label={mode === 'sign-in' ? 'Sign in' : 'Create account'} onPress={submit} busy={busy} />
+        <Button
+          label={mode === 'sign-in' ? 'Sign in' : 'Create account'}
+          onPress={submit}
+          busy={busy}
+        />
         <Button
           kind="quiet"
           label={mode === 'sign-in' ? 'New here? Create an account' : 'Have an account? Sign in'}

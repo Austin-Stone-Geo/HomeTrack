@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { Item, List, ListEntry, ListType, Member, Space } from '@/lib/types';
+import type { Item, List, ListEntry, ListType, Member, MemberRole, Space, Task } from '@/lib/types';
 import { unwrap } from '@/lib/use-live-query';
 
 /** All database calls the app makes, in one place. */
@@ -13,7 +13,12 @@ function db() {
 
 export async function fetchSpaces(householdId: string) {
   return unwrap(
-    await db().from('spaces').select('*').eq('household_id', householdId).order('sort_order').order('name')
+    await db()
+      .from('spaces')
+      .select('*')
+      .eq('household_id', householdId)
+      .order('sort_order')
+      .order('name'),
   ) as Space[];
 }
 
@@ -23,7 +28,11 @@ export async function fetchSpace(id: string) {
 
 export async function createSpace(householdId: string, name: string, sortOrder: number) {
   return unwrap(
-    await db().from('spaces').insert({ household_id: householdId, name, sort_order: sortOrder }).select().single()
+    await db()
+      .from('spaces')
+      .insert({ household_id: householdId, name, sort_order: sortOrder })
+      .select()
+      .single(),
   ) as Space;
 }
 
@@ -49,13 +58,27 @@ export async function fetchItem(id: string) {
 
 export async function findItemByBarcode(householdId: string, barcode: string) {
   return unwrap(
-    await db().from('items').select('*').eq('household_id', householdId).eq('barcode', barcode).limit(1).maybeSingle()
+    await db()
+      .from('items')
+      .select('*')
+      .eq('household_id', householdId)
+      .eq('barcode', barcode)
+      .limit(1)
+      .maybeSingle(),
   ) as Item | null;
 }
 
 export type ItemInput = Pick<
   Item,
-  'space_id' | 'name' | 'category' | 'quantity' | 'unit' | 'min_quantity' | 'expires_on' | 'barcode' | 'notes'
+  | 'space_id'
+  | 'name'
+  | 'category'
+  | 'quantity'
+  | 'unit'
+  | 'min_quantity'
+  | 'expires_on'
+  | 'barcode'
+  | 'notes'
 >;
 
 export async function createItem(input: ItemInput) {
@@ -68,7 +91,12 @@ export async function updateItem(id: string, input: Partial<ItemInput>) {
 }
 
 export async function setQuantity(id: string, quantity: number) {
-  unwrap(await db().from('items').update({ quantity: Math.max(0, quantity) }).eq('id', id));
+  unwrap(
+    await db()
+      .from('items')
+      .update({ quantity: Math.max(0, quantity) })
+      .eq('id', id),
+  );
 }
 
 export async function deleteItem(id: string) {
@@ -85,10 +113,19 @@ export type ListWithCount = List & { open: number };
 
 export async function fetchLists(householdId: string) {
   const lists = unwrap(
-    await db().from('lists').select('*').eq('household_id', householdId).order('sort_order').order('name')
+    await db()
+      .from('lists')
+      .select('*')
+      .eq('household_id', householdId)
+      .order('sort_order')
+      .order('name'),
   ) as List[];
   const open = unwrap(
-    await db().from('list_entries').select('list_id').eq('household_id', householdId).eq('done', false)
+    await db()
+      .from('list_entries')
+      .select('list_id')
+      .eq('household_id', householdId)
+      .eq('done', false),
   ) as { list_id: string }[];
   return lists.map((list) => ({ ...list, open: open.filter((e) => e.list_id === list.id).length }));
 }
@@ -97,9 +134,18 @@ export async function fetchList(id: string) {
   return unwrap(await db().from('lists').select('*').eq('id', id).maybeSingle()) as List | null;
 }
 
-export async function createList(householdId: string, name: string, type: ListType, sortOrder: number) {
+export async function createList(
+  householdId: string,
+  name: string,
+  type: ListType,
+  sortOrder: number,
+) {
   return unwrap(
-    await db().from('lists').insert({ household_id: householdId, name, type, sort_order: sortOrder }).select().single()
+    await db()
+      .from('lists')
+      .insert({ household_id: householdId, name, type, sort_order: sortOrder })
+      .select()
+      .single(),
   ) as List;
 }
 
@@ -109,13 +155,22 @@ export async function deleteList(id: string) {
 
 export async function fetchEntries(listId: string) {
   return unwrap(
-    await db().from('list_entries').select('*').eq('list_id', listId).order('done').order('created_at')
+    await db()
+      .from('list_entries')
+      .select('*')
+      .eq('list_id', listId)
+      .order('done')
+      .order('created_at'),
   ) as ListEntry[];
 }
 
 export async function addEntry(listId: string, text: string, assignedTo?: string | null) {
   // household_id is filled in by the database from the list.
-  unwrap(await db().from('list_entries').insert({ list_id: listId, text, assigned_to: assignedTo ?? null }));
+  unwrap(
+    await db()
+      .from('list_entries')
+      .insert({ list_id: listId, text, assigned_to: assignedTo ?? null }),
+  );
 }
 
 /** Ticks an entry off. On a grocery list, this also restocks the linked item. */
@@ -135,17 +190,85 @@ export async function deleteEntry(id: string) {
   unwrap(await db().from('list_entries').delete().eq('id', id));
 }
 
+// ---- Tasks ----------------------------------------------------------------
+
+export async function fetchTasks(householdId: string) {
+  return unwrap(
+    await db()
+      .from('tasks')
+      .select('*')
+      .eq('household_id', householdId)
+      .eq('active', true)
+      .order('due_on')
+      .order('title'),
+  ) as Task[];
+}
+
+export async function fetchTask(id: string) {
+  return unwrap(await db().from('tasks').select('*').eq('id', id).maybeSingle()) as Task | null;
+}
+
+export type TaskInput = Pick<
+  Task,
+  | 'title'
+  | 'space_id'
+  | 'repeat_every'
+  | 'repeat_unit'
+  | 'due_on'
+  | 'assigned_to'
+  | 'remind_at'
+  | 'notes'
+>;
+
+export async function createTask(householdId: string, input: TaskInput) {
+  return unwrap(
+    await db()
+      .from('tasks')
+      .insert({ household_id: householdId, ...input })
+      .select()
+      .single(),
+  ) as Task;
+}
+
+export async function updateTask(id: string, input: Partial<TaskInput>) {
+  unwrap(await db().from('tasks').update(input).eq('id', id));
+}
+
+export async function deleteTask(id: string) {
+  unwrap(await db().from('tasks').delete().eq('id', id));
+}
+
+/** Logs the task as done and moves a repeating task to its next date. */
+export async function completeTask(id: string) {
+  unwrap(await db().rpc('complete_task', { task_id: id }));
+}
+
+export async function fetchRecentCompletions(taskId: string) {
+  return unwrap(
+    await db()
+      .from('task_completions')
+      .select('*')
+      .eq('task_id', taskId)
+      .order('done_at', { ascending: false })
+      .limit(5),
+  ) as { id: string; user_id: string | null; done_at: string; notes: string | null }[];
+}
+
 // ---- Household ------------------------------------------------------------
+
+export async function updateRole(memberId: string, role: MemberRole) {
+  unwrap(await db().from('members').update({ role }).eq('id', memberId));
+}
 
 export async function fetchMembers(householdId: string) {
   return unwrap(
-    await db().from('members').select('*').eq('household_id', householdId).order('created_at')
+    await db().from('members').select('*').eq('household_id', householdId).order('created_at'),
   ) as Member[];
 }
 
 export async function createHousehold(name: string, userId: string, displayName: string) {
   const household = unwrap(
-    await db().from('households').insert({ name, created_by: userId }).select().single()
+    await db().from('households').insert({ name, created_by: userId }).select().single(),
   ) as { id: string };
   if (displayName) {
     unwrap(
@@ -153,7 +276,7 @@ export async function createHousehold(name: string, userId: string, displayName:
         .from('members')
         .update({ display_name: displayName })
         .eq('household_id', household.id)
-        .eq('user_id', userId)
+        .eq('user_id', userId),
     );
   }
   return household;
@@ -178,16 +301,21 @@ export type ProductInfo = { name: string; category: string | null; unit: string 
 export async function lookupBarcode(barcode: string): Promise<ProductInfo | null> {
   try {
     const response = await fetch(
-      `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=product_name,brands,categories,quantity`
+      `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=product_name,brands,categories,quantity`,
     );
     if (!response.ok) return null;
     const json = await response.json();
     const product = json?.product;
     if (json?.status !== 1 || !product?.product_name) return null;
     const brand = typeof product.brands === 'string' ? product.brands.split(',')[0].trim() : '';
-    const name = brand && !product.product_name.includes(brand) ? `${brand} ${product.product_name}` : product.product_name;
+    const name =
+      brand && !product.product_name.includes(brand)
+        ? `${brand} ${product.product_name}`
+        : product.product_name;
     const category =
-      typeof product.categories === 'string' ? product.categories.split(',').at(-1)?.trim() || null : null;
+      typeof product.categories === 'string'
+        ? product.categories.split(',').at(-1)?.trim() || null
+        : null;
     return { name, category, unit: product.quantity || null };
   } catch {
     return null;

@@ -34,9 +34,14 @@ export function Screen({
 }) {
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={pushed ? ['left', 'right'] : ['top', 'left', 'right']}>
+      <SafeAreaView
+        style={styles.safeArea}
+        edges={pushed ? ['left', 'right'] : ['top', 'left', 'right']}>
         <ScrollView
-          contentContainerStyle={[styles.content, pushed ? styles.contentPushed : styles.contentTabs]}
+          contentContainerStyle={[
+            styles.content,
+            pushed ? styles.contentPushed : styles.contentTabs,
+          ]}
           keyboardShouldPersistTaps="handled">
           {title ? <ThemedText type="subtitle">{title}</ThemedText> : null}
           {subtitle ? <ThemedText themeColor="textSecondary">{subtitle}</ThemedText> : null}
@@ -89,7 +94,10 @@ export function Card({
   );
   if (!onPress) return inner;
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ pressed }) => pressed && styles.pressed}>
       {inner}
     </Pressable>
   );
@@ -129,7 +137,13 @@ export function Button({
   const background =
     kind === 'primary' ? theme.tint : kind === 'quiet' ? 'transparent' : theme.backgroundSelected;
   const color =
-    kind === 'primary' ? theme.onTint : kind === 'danger' ? theme.danger : kind === 'quiet' ? theme.tint : theme.text;
+    kind === 'primary'
+      ? theme.onTint
+      : kind === 'danger'
+        ? theme.danger
+        : kind === 'quiet'
+          ? theme.tint
+          : theme.text;
   return (
     <Pressable
       onPress={onPress}

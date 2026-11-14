@@ -39,7 +39,9 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <Screen title="Set up your home" subtitle="Start a new household, or join one someone has already made.">
+    <Screen
+      title="Set up your home"
+      subtitle="Start a new household, or join one someone has already made.">
       <ChoiceChips
         options={[
           { value: 'create', label: 'Start a household' },
@@ -51,7 +53,12 @@ export default function OnboardingScreen() {
           setError(null);
         }}
       />
-      <TextField label="Your name" value={yourName} onChangeText={setYourName} placeholder="What the household calls you" />
+      <TextField
+        label="Your name"
+        value={yourName}
+        onChangeText={setYourName}
+        placeholder="What the household calls you"
+      />
       {mode === 'create' ? (
         <TextField
           label="Household name"
@@ -72,7 +79,11 @@ export default function OnboardingScreen() {
       )}
       <ErrorText>{error}</ErrorText>
       <ButtonRow>
-        <Button label={mode === 'create' ? 'Create household' : 'Join household'} onPress={submit} busy={busy} />
+        <Button
+          label={mode === 'create' ? 'Create household' : 'Join household'}
+          onPress={submit}
+          busy={busy}
+        />
         <Button kind="quiet" label="Sign out" onPress={signOut} />
       </ButtonRow>
     </Screen>

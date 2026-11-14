@@ -15,7 +15,7 @@ let channelCount = 0;
  */
 export function useLiveQuery<T>(
   load: () => Promise<T>,
-  options: { householdId: string; tables: string[]; initial: T }
+  options: { householdId: string; tables: string[]; initial: T },
 ) {
   const { householdId, tables, initial } = options;
   const [data, setData] = useState<T>(initial);
@@ -40,7 +40,7 @@ export function useLiveQuery<T>(
   useFocusEffect(
     useCallback(() => {
       reload();
-    }, [load, reload])
+    }, [load, reload]),
   );
 
   const tableKey = tables.join(',');
@@ -54,7 +54,7 @@ export function useLiveQuery<T>(
         { event: '*', schema: 'public', table, filter: `household_id=eq.${householdId}` },
         () => {
           reload();
-        }
+        },
       );
     }
     channel.subscribe();

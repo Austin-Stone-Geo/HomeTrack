@@ -33,6 +33,7 @@ function RootStack() {
         <Stack.Screen name="space/[id]" options={{ title: '' }} />
         <Stack.Screen name="item/[id]" options={{ title: 'Item' }} />
         <Stack.Screen name="list/[id]" options={{ title: '' }} />
+        <Stack.Screen name="task/[id]" options={{ title: 'Task' }} />
         <Stack.Screen name="scan" options={{ title: 'Scan a barcode', presentation: 'modal' }} />
       </Stack.Protected>
 

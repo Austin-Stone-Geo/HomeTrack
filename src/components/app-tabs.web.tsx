@@ -6,7 +6,13 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { Pressable, type PressableProps, StyleSheet, useWindowDimensions, View } from 'react-native';
+import {
+  Pressable,
+  type PressableProps,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
@@ -24,6 +30,9 @@ export default function AppTabs() {
           </TabTrigger>
           <TabTrigger name="lists" href="/lists" asChild>
             <TabButton>Lists</TabButton>
+          </TabTrigger>
+          <TabTrigger name="tasks" href="/tasks" asChild>
+            <TabButton>Tasks</TabButton>
           </TabTrigger>
           <TabTrigger name="settings" href="/settings" asChild>
             <TabButton>Household</TabButton>
@@ -55,7 +64,9 @@ export function CustomTabList(props: TabListProps) {
   const narrow = width < 480;
   return (
     <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={[styles.innerContainer, narrow && styles.innerNarrow]}>
+      <ThemedView
+        type="backgroundElement"
+        style={[styles.innerContainer, narrow && styles.innerNarrow]}>
         {narrow ? null : (
           <ThemedText type="smallBold" style={styles.brandText}>
             HomeTrack

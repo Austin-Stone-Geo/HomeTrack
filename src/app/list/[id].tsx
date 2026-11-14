@@ -3,7 +3,16 @@ import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ConfirmButton } from '@/components/confirm-button';
-import { Button, ButtonRow, ChoiceChips, EmptyState, ErrorText, Screen, SectionLabel, TextField } from '@/components/screen';
+import {
+  Button,
+  ButtonRow,
+  ChoiceChips,
+  EmptyState,
+  ErrorText,
+  Screen,
+  SectionLabel,
+  TextField,
+} from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -25,16 +34,25 @@ import { useLiveQuery } from '@/lib/use-live-query';
 
 export default function ListScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { household } = useRequiredHousehold();
+  const { household, isAdult } = useRequiredHousehold();
   const [text, setText] = useState('');
   const [assignee, setAssignee] = useState<string>('anyone');
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [list, entries, members] = await Promise.all([fetchList(id), fetchEntries(id), fetchMembers(household.id)]);
+    const [list, entries, members] = await Promise.all([
+      fetchList(id),
+      fetchEntries(id),
+      fetchMembers(household.id),
+    ]);
     return { list, entries, members };
   }, [household.id, id]);
-  const { data, loading, error: loadError, reload } = useLiveQuery(load, {
+  const {
+    data,
+    loading,
+    error: loadError,
+    reload,
+  } = useLiveQuery(load, {
     householdId: household.id,
     tables: ['lists', 'list_entries'],
     initial: { list: null as List | null, entries: [] as ListEntry[], members: [] as Member[] },
@@ -81,7 +99,8 @@ export default function ListScreen() {
       <Stack.Screen options={{ title: list?.name ?? '' }} />
       {isGrocery ? (
         <ThemedText type="small" themeColor="textSecondary">
-          Things that run out at home land here by themselves. Ticking off a linked item adds it back to your stock.
+          Things that run out at home land here by themselves. Ticking off a linked item adds it
+          back to your stock.
         </ThemedText>
       ) : null}
       <TextField
@@ -96,7 +115,10 @@ export default function ListScreen() {
       {canAssign && members.length > 1 ? (
         <ChoiceChips
           label="For"
-          options={[{ value: 'anyone', label: 'Anyone' }, ...members.map((m) => ({ value: m.id, label: m.display_name || 'Someone' }))]}
+          options={[
+            { value: 'anyone', label: 'Anyone' },
+            ...members.map((m) => ({ value: m.id, label: m.display_name || 'Someone' })),
+          ]}
           value={assignee}
           onChange={setAssignee}
         />
@@ -110,16 +132,31 @@ export default function ListScreen() {
         <EntryRow
           key={entry.id}
           entry={entry}
-          note={[entry.item_id && isGrocery ? 'From your inventory' : null, memberName(entry.assigned_to)].filter(Boolean).join(' · ')}
+          note={[
+            entry.item_id && isGrocery ? 'From your inventory' : null,
+            memberName(entry.assigned_to),
+          ]
+            .filter(Boolean)
+            .join(' · ')}
           onToggle={() => run(() => completeEntry(entry.id))}
-          onDelete={() => run(() => deleteEntry(entry.id))}
+          onDelete={isAdult ? () => run(() => deleteEntry(entry.id)) : undefined}
         />
       ))}
       {!loading && open.length === 0 ? <EmptyState>Nothing left on this list.</EmptyState> : null}
 
       {done.length > 0 ? (
         <>
-          <SectionLabel right={<Button small kind="quiet" label="Clear done" onPress={() => run(() => clearDoneEntries(id))} />}>
+          <SectionLabel
+            right={
+              isAdult ? (
+                <Button
+                  small
+                  kind="quiet"
+                  label="Clear done"
+                  onPress={() => run(() => clearDoneEntries(id))}
+                />
+              ) : undefined
+            }>
             Done
           </SectionLabel>
           {done.map((entry) => (
@@ -127,26 +164,30 @@ export default function ListScreen() {
               key={entry.id}
               entry={entry}
               onToggle={() => run(() => reopenEntry(entry.id))}
-              onDelete={() => run(() => deleteEntry(entry.id))}
+              onDelete={isAdult ? () => run(() => deleteEntry(entry.id)) : undefined}
             />
           ))}
         </>
       ) : null}
 
-      <SectionLabel>About this list</SectionLabel>
-      <ButtonRow>
-        <ConfirmButton
-          small
-          label="Delete list"
-          confirmLabel="Delete it for everyone"
-          onConfirm={() =>
-            run(async () => {
-              await deleteList(id);
-              router.back();
-            })
-          }
-        />
-      </ButtonRow>
+      {isAdult ? (
+        <>
+          <SectionLabel>About this list</SectionLabel>
+          <ButtonRow>
+            <ConfirmButton
+              small
+              label="Delete list"
+              confirmLabel="Delete it for everyone"
+              onConfirm={() =>
+                run(async () => {
+                  await deleteList(id);
+                  router.back();
+                })
+              }
+            />
+          </ButtonRow>
+        </>
+      ) : null}
     </Screen>
   );
 }
@@ -160,7 +201,7 @@ function EntryRow({
   entry: ListEntry;
   note?: string;
   onToggle: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 }) {
   const theme = useTheme();
   return (
@@ -177,7 +218,9 @@ function EntryRow({
             { borderColor: entry.done ? theme.tint : theme.textSecondary },
             entry.done && { backgroundColor: theme.tint },
           ]}>
-          {entry.done ? <ThemedText style={[styles.check, { color: theme.onTint }]}>✓</ThemedText> : null}
+          {entry.done ? (
+            <ThemedText style={[styles.check, { color: theme.onTint }]}>✓</ThemedText>
+          ) : null}
         </View>
         <View style={styles.text}>
           <ThemedText
@@ -193,7 +236,15 @@ function EntryRow({
           ) : null}
         </View>
       </Pressable>
-      <Button small kind="quiet" label="Remove" accessibilityLabel={`Remove ${entry.text}`} onPress={onDelete} />
+      {onDelete ? (
+        <Button
+          small
+          kind="quiet"
+          label="Remove"
+          accessibilityLabel={`Remove ${entry.text}`}
+          onPress={onDelete}
+        />
+      ) : null}
     </ThemedView>
   );
 }

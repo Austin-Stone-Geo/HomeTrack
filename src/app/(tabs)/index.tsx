@@ -3,36 +3,75 @@ import { useCallback, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 
 import { ItemRow } from '@/components/item-row';
-import { Button, ButtonRow, Card, EmptyState, ErrorText, Screen, SectionLabel, TextField } from '@/components/screen';
+import { TaskRow } from '@/components/task-row';
+import {
+  Button,
+  ButtonRow,
+  Card,
+  EmptyState,
+  ErrorText,
+  Screen,
+  SectionLabel,
+  TextField,
+} from '@/components/screen';
 import { useRequiredHousehold } from '@/lib/household';
-import { createSpace, fetchItems, fetchSpaces, isLow } from '@/lib/inventory';
-import type { Item, Space } from '@/lib/types';
+import {
+  createSpace,
+  fetchItems,
+  fetchMembers,
+  fetchSpaces,
+  fetchTasks,
+  isLow,
+} from '@/lib/inventory';
+import { daysUntil } from '@/lib/tasks';
+import type { Item, Member, Space, Task } from '@/lib/types';
 import { useLiveQuery } from '@/lib/use-live-query';
 
 export default function HomeScreen() {
-  const { household } = useRequiredHousehold();
+  const { household, member, isAdult } = useRequiredHousehold();
   const [search, setSearch] = useState('');
   const [newSpace, setNewSpace] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [spaces, items] = await Promise.all([fetchSpaces(household.id), fetchItems(household.id)]);
-    return { spaces, items };
+    const [spaces, items, tasks, members] = await Promise.all([
+      fetchSpaces(household.id),
+      fetchItems(household.id),
+      fetchTasks(household.id),
+      fetchMembers(household.id),
+    ]);
+    return { spaces, items, tasks, members };
   }, [household.id]);
-  const { data, loading, error: loadError } = useLiveQuery(load, {
+  const {
+    data,
+    loading,
+    error: loadError,
+    reload,
+  } = useLiveQuery(load, {
     householdId: household.id,
-    tables: ['spaces', 'items'],
-    initial: { spaces: [] as Space[], items: [] as Item[] },
+    tables: ['spaces', 'items', 'tasks'],
+    initial: {
+      spaces: [] as Space[],
+      items: [] as Item[],
+      tasks: [] as Task[],
+      members: [] as Member[],
+    },
   });
 
   const spaceNames = useMemo(() => new Map(data.spaces.map((s) => [s.id, s.name])), [data.spaces]);
   const term = search.trim().toLowerCase();
   const matches = term
     ? data.items.filter((item) =>
-        [item.name, item.category, item.notes, item.barcode].some((v) => v?.toLowerCase().includes(term))
+        [item.name, item.category, item.notes, item.barcode].some((v) =>
+          v?.toLowerCase().includes(term),
+        ),
       )
     : [];
   const lowItems = data.items.filter(isLow);
+  // Tasks for this person (or anyone) that are overdue or due by tomorrow.
+  const dueSoon = data.tasks.filter(
+    (t) => (t.assigned_to === null || t.assigned_to === member.id) && daysUntil(t.due_on) <= 1,
+  );
 
   async function addSpace() {
     if (!newSpace?.trim()) return;
@@ -57,29 +96,55 @@ export default function HomeScreen() {
         clearButtonMode="while-editing"
         autoCorrect={false}
       />
-      <ButtonRow>
-        <Button label="Add item" onPress={() => router.push({ pathname: '/item/[id]', params: { id: 'new' } })} />
-        {Platform.OS !== 'web' ? (
-          <Button kind="secondary" label="Scan barcode" onPress={() => router.push('/scan')} />
-        ) : null}
-      </ButtonRow>
+      {isAdult ? (
+        <ButtonRow>
+          <Button
+            label="Add item"
+            onPress={() => router.push({ pathname: '/item/[id]', params: { id: 'new' } })}
+          />
+          {Platform.OS !== 'web' ? (
+            <Button kind="secondary" label="Scan barcode" onPress={() => router.push('/scan')} />
+          ) : null}
+        </ButtonRow>
+      ) : null}
       <ErrorText>{loadError}</ErrorText>
 
       {term ? (
         <>
           <SectionLabel>{`${matches.length} match${matches.length === 1 ? '' : 'es'}`}</SectionLabel>
           {matches.map((item) => (
-            <ItemRow key={item.id} item={item} spaceName={spaceNames.get(item.space_id)} />
+            <ItemRow
+              key={item.id}
+              item={item}
+              spaceName={spaceNames.get(item.space_id)}
+              canEdit={isAdult}
+            />
           ))}
-          {matches.length === 0 ? <EmptyState>Nothing in the house matches that.</EmptyState> : null}
+          {matches.length === 0 ? (
+            <EmptyState>Nothing in the house matches that.</EmptyState>
+          ) : null}
         </>
       ) : (
         <>
+          {dueSoon.length > 0 ? (
+            <>
+              <SectionLabel>Your tasks due soon</SectionLabel>
+              {dueSoon.map((task) => (
+                <TaskRow key={task.id} task={task} canEdit={isAdult} onDone={reload} />
+              ))}
+            </>
+          ) : null}
+
           {lowItems.length > 0 ? (
             <>
               <SectionLabel>Running low</SectionLabel>
               {lowItems.map((item) => (
-                <ItemRow key={item.id} item={item} spaceName={spaceNames.get(item.space_id)} />
+                <ItemRow
+                  key={item.id}
+                  item={item}
+                  spaceName={spaceNames.get(item.space_id)}
+                  canEdit={isAdult}
+                />
               ))}
             </>
           ) : null}
@@ -98,7 +163,7 @@ export default function HomeScreen() {
           })}
           {!loading && data.spaces.length === 0 ? <EmptyState>No spaces yet.</EmptyState> : null}
 
-          {newSpace === null ? (
+          {!isAdult ? null : newSpace === null ? (
             <Button kind="quiet" label="+ Add a space" onPress={() => setNewSpace('')} />
           ) : (
             <Card>
