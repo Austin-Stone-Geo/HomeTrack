@@ -6,7 +6,7 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { Pressable, type PressableProps, View, StyleSheet } from 'react-native';
+import { Pressable, type PressableProps, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
@@ -24,6 +24,9 @@ export default function AppTabs() {
           </TabTrigger>
           <TabTrigger name="lists" href="/lists" asChild>
             <TabButton>Lists</TabButton>
+          </TabTrigger>
+          <TabTrigger name="settings" href="/settings" asChild>
+            <TabButton>Household</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -47,12 +50,17 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
 }
 
 export function CustomTabList(props: TabListProps) {
+  // On narrow screens, drop the app name so the three tabs fit.
+  const { width } = useWindowDimensions();
+  const narrow = width < 480;
   return (
     <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ThemedText type="smallBold" style={styles.brandText}>
-          HomeTrack
-        </ThemedText>
+      <ThemedView type="backgroundElement" style={[styles.innerContainer, narrow && styles.innerNarrow]}>
+        {narrow ? null : (
+          <ThemedText type="smallBold" style={styles.brandText}>
+            HomeTrack
+          </ThemedText>
+        )}
 
         {props.children}
       </ThemedView>
@@ -78,6 +86,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     gap: Spacing.two,
     maxWidth: MaxContentWidth,
+  },
+  innerNarrow: {
+    paddingHorizontal: Spacing.two,
+    justifyContent: 'space-around',
   },
   brandText: {
     marginRight: 'auto',
