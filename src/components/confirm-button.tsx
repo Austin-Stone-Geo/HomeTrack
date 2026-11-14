@@ -19,7 +19,8 @@ export function ConfirmButton({
 }) {
   const [armed, setArmed] = useState(false);
   const [busy, setBusy] = useState(false);
-  if (!armed) return <Button small={small} kind="danger" label={label} onPress={() => setArmed(true)} />;
+  if (!armed)
+    return <Button small={small} kind="danger" label={label} onPress={() => setArmed(true)} />;
   return (
     <>
       <Button

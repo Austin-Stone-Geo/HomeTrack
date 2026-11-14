@@ -1,7 +1,17 @@
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
 
-import { Button, ButtonRow, Card, ChoiceChips, EmptyState, ErrorText, Screen, SectionLabel, TextField } from '@/components/screen';
+import {
+  Button,
+  ButtonRow,
+  Card,
+  ChoiceChips,
+  EmptyState,
+  ErrorText,
+  Screen,
+  SectionLabel,
+  TextField,
+} from '@/components/screen';
 import { useRequiredHousehold } from '@/lib/household';
 import { createList, fetchLists, type ListWithCount } from '@/lib/inventory';
 import type { ListType } from '@/lib/types';
@@ -9,12 +19,16 @@ import { ListTypes } from '@/constants/list-types';
 import { useLiveQuery } from '@/lib/use-live-query';
 
 export default function ListsScreen() {
-  const { household } = useRequiredHousehold();
+  const { household, isAdult } = useRequiredHousehold();
   const [draft, setDraft] = useState<{ name: string; type: ListType } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => fetchLists(household.id), [household.id]);
-  const { data: lists, loading, error: loadError } = useLiveQuery(load, {
+  const {
+    data: lists,
+    loading,
+    error: loadError,
+  } = useLiveQuery(load, {
     householdId: household.id,
     tables: ['lists', 'list_entries'],
     initial: [] as ListWithCount[],
@@ -49,8 +63,12 @@ export default function ListsScreen() {
       ))}
       {!loading && lists.length === 0 ? <EmptyState>No lists yet.</EmptyState> : null}
 
-      {draft === null ? (
-        <Button kind="quiet" label="+ New list" onPress={() => setDraft({ name: '', type: 'todo' })} />
+      {!isAdult ? null : draft === null ? (
+        <Button
+          kind="quiet"
+          label="+ New list"
+          onPress={() => setDraft({ name: '', type: 'todo' })}
+        />
       ) : (
         <Card>
           <TextField
@@ -61,7 +79,12 @@ export default function ListsScreen() {
             autoFocus
             onSubmitEditing={add}
           />
-          <ChoiceChips label="Kind of list" options={ListTypes} value={draft.type} onChange={(type) => setDraft({ ...draft, type })} />
+          <ChoiceChips
+            label="Kind of list"
+            options={ListTypes}
+            value={draft.type}
+            onChange={(type) => setDraft({ ...draft, type })}
+          />
           <ErrorText>{error}</ErrorText>
           <ButtonRow>
             <Button small label="Create list" onPress={add} />

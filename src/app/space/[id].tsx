@@ -4,7 +4,16 @@ import { Platform } from 'react-native';
 
 import { ConfirmButton } from '@/components/confirm-button';
 import { ItemRow } from '@/components/item-row';
-import { Button, ButtonRow, Card, EmptyState, ErrorText, Screen, SectionLabel, TextField } from '@/components/screen';
+import {
+  Button,
+  ButtonRow,
+  Card,
+  EmptyState,
+  ErrorText,
+  Screen,
+  SectionLabel,
+  TextField,
+} from '@/components/screen';
 import { useRequiredHousehold } from '@/lib/household';
 import { deleteSpace, fetchItems, fetchSpace, renameSpace } from '@/lib/inventory';
 import type { Item, Space } from '@/lib/types';
@@ -12,7 +21,7 @@ import { useLiveQuery } from '@/lib/use-live-query';
 
 export default function SpaceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { household } = useRequiredHousehold();
+  const { household, isAdult } = useRequiredHousehold();
   const [filter, setFilter] = useState('');
   const [renaming, setRenaming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +30,12 @@ export default function SpaceScreen() {
     const [space, items] = await Promise.all([fetchSpace(id), fetchItems(household.id, id)]);
     return { space, items };
   }, [household.id, id]);
-  const { data, loading, error: loadError, reload } = useLiveQuery(load, {
+  const {
+    data,
+    loading,
+    error: loadError,
+    reload,
+  } = useLiveQuery(load, {
     householdId: household.id,
     tables: ['spaces', 'items'],
     initial: { space: null as Space | null, items: [] as Item[] },
@@ -53,31 +67,49 @@ export default function SpaceScreen() {
   return (
     <Screen pushed>
       <Stack.Screen options={{ title: data.space?.name ?? '' }} />
-      <ButtonRow>
-        <Button
-          label="Add item"
-          onPress={() => router.push({ pathname: '/item/[id]', params: { id: 'new', spaceId: id } })}
-        />
-        {Platform.OS !== 'web' ? (
-          <Button kind="secondary" label="Scan barcode" onPress={() => router.push({ pathname: '/scan', params: { spaceId: id } })} />
-        ) : null}
-      </ButtonRow>
+      {isAdult ? (
+        <ButtonRow>
+          <Button
+            label="Add item"
+            onPress={() =>
+              router.push({ pathname: '/item/[id]', params: { id: 'new', spaceId: id } })
+            }
+          />
+          {Platform.OS !== 'web' ? (
+            <Button
+              kind="secondary"
+              label="Scan barcode"
+              onPress={() => router.push({ pathname: '/scan', params: { spaceId: id } })}
+            />
+          ) : null}
+        </ButtonRow>
+      ) : null}
       {data.items.length > 6 ? (
-        <TextField value={filter} onChangeText={setFilter} placeholder={`Filter ${data.space?.name ?? ''}`} accessibilityLabel="Filter items" />
+        <TextField
+          value={filter}
+          onChangeText={setFilter}
+          placeholder={`Filter ${data.space?.name ?? ''}`}
+          accessibilityLabel="Filter items"
+        />
       ) : null}
       <ErrorText>{loadError}</ErrorText>
 
       {items.map((item) => (
-        <ItemRow key={item.id} item={item} />
+        <ItemRow key={item.id} item={item} canEdit={isAdult} />
       ))}
       {!loading && data.items.length === 0 ? (
         <EmptyState>Nothing here yet. Add an item, or scan one on your phone.</EmptyState>
       ) : null}
 
-      <SectionLabel>About this space</SectionLabel>
-      {renaming === null ? (
+      {!isAdult ? null : <SectionLabel>About this space</SectionLabel>}
+      {!isAdult ? null : renaming === null ? (
         <ButtonRow>
-          <Button small kind="secondary" label="Rename" onPress={() => setRenaming(data.space?.name ?? '')} />
+          <Button
+            small
+            kind="secondary"
+            label="Rename"
+            onPress={() => setRenaming(data.space?.name ?? '')}
+          />
           <ConfirmButton
             small
             label="Delete space"
@@ -94,7 +126,13 @@ export default function SpaceScreen() {
         </ButtonRow>
       ) : (
         <Card>
-          <TextField label="Space name" value={renaming} onChangeText={setRenaming} autoFocus onSubmitEditing={saveName} />
+          <TextField
+            label="Space name"
+            value={renaming}
+            onChangeText={setRenaming}
+            autoFocus
+            onSubmitEditing={saveName}
+          />
           <ButtonRow>
             <Button small label="Save" onPress={saveName} />
             <Button small kind="quiet" label="Cancel" onPress={() => setRenaming(null)} />

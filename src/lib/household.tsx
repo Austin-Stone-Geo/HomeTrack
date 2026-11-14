@@ -1,5 +1,13 @@
 import type { Session } from '@supabase/supabase-js';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { Household, Member } from '@/lib/types';
@@ -18,6 +26,8 @@ type HouseholdContextValue = {
   session: Session | null;
   household: Household | null;
   member: Member | null;
+  /** Owners and adults can change things; kids can tick lists and do chores. */
+  isAdult: boolean;
   /** Re-read the person's household, e.g. after creating or joining one. */
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -90,9 +100,10 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
             ? 'ready'
             : 'no-household';
 
+  const isAdult = member?.role === 'owner' || member?.role === 'adult';
   const value = useMemo(
-    () => ({ status, session, household, member, refresh, signOut }),
-    [status, session, household, member, refresh, signOut]
+    () => ({ status, session, household, member, isAdult, refresh, signOut }),
+    [status, session, household, member, isAdult, refresh, signOut],
   );
 
   return <HouseholdContext.Provider value={value}>{children}</HouseholdContext.Provider>;
@@ -106,7 +117,7 @@ export function useHousehold() {
 
 /** The current household; only call this on screens that require one. */
 export function useRequiredHousehold() {
-  const { household, member } = useHousehold();
+  const { household, member, isAdult } = useHousehold();
   if (!household || !member) throw new Error('No household loaded');
-  return { household, member };
+  return { household, member, isAdult };
 }

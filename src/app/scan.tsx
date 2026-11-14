@@ -25,7 +25,9 @@ export default function ScanScreen() {
   if (Platform.OS === 'web') {
     return (
       <Screen pushed>
-        <ThemedText>Barcode scanning works in the phone app. On the web, add items by name instead.</ThemedText>
+        <ThemedText>
+          Barcode scanning works in the phone app. On the web, add items by name instead.
+        </ThemedText>
       </Screen>
     );
   }
@@ -35,7 +37,9 @@ export default function ScanScreen() {
   if (!permission.granted) {
     return (
       <Screen pushed>
-        <ThemedText>HomeTrack needs your camera to read barcodes. Nothing is recorded or saved.</ThemedText>
+        <ThemedText>
+          HomeTrack needs your camera to read barcodes. Nothing is recorded or saved.
+        </ThemedText>
         <ButtonRow>
           <Button label="Allow camera" onPress={requestPermission} />
           <Button kind="quiet" label="Cancel" onPress={() => router.back()} />
@@ -64,7 +68,11 @@ export default function ScanScreen() {
           barcode,
           ...(spaceId ? { spaceId } : {}),
           ...(product
-            ? { name: product.name, ...(product.category ? { category: product.category } : {}), ...(product.unit ? { unit: product.unit } : {}) }
+            ? {
+                name: product.name,
+                ...(product.category ? { category: product.category } : {}),
+                ...(product.unit ? { unit: product.unit } : {}),
+              }
             : {}),
         },
       });
@@ -79,7 +87,9 @@ export default function ScanScreen() {
       <CameraView
         style={styles.fill}
         facing="back"
-        barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'qr'] }}
+        barcodeScannerSettings={{
+          barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'qr'],
+        }}
         onBarcodeScanned={onScanned}
       />
       <ThemedView style={styles.panel}>
@@ -91,7 +101,16 @@ export default function ScanScreen() {
         ) : (
           <ThemedText type="small">Hold a barcode inside the frame.</ThemedText>
         )}
-        <Button kind="secondary" label="Type it in instead" onPress={() => router.replace({ pathname: '/item/[id]', params: { id: 'new', ...(spaceId ? { spaceId } : {}) } })} />
+        <Button
+          kind="secondary"
+          label="Type it in instead"
+          onPress={() =>
+            router.replace({
+              pathname: '/item/[id]',
+              params: { id: 'new', ...(spaceId ? { spaceId } : {}) },
+            })
+          }
+        />
       </ThemedView>
     </View>
   );
